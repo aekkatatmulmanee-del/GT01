@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumer Behavior Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 min-h-screen">
+    <div class="max-w-7xl mx-auto space-y-8">
+        <!-- Header -->
+        <div class="text-center">
+            <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">
+                แผงควบคุมพฤติกรรมผู้บริโภค
+            </h1>
+            <p class="mt-2 text-lg text-gray-600">
+                สรุปข้อมูลเชิงลึกจากพฤติกรรมการช้อปปิ้งออนไลน์
+            </p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center justify-center text-center">
+                <div class="text-5xl font-bold text-blue-600 mb-2" id="total-users">กำลังโหลด...</div>
+                <div class="text-gray-500 font-medium">จำนวนลูกค้าทั้งหมด</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center justify-center text-center">
+                <div class="text-5xl font-bold text-green-600 mb-2" id="avg-satisfaction">กำลังโหลด...</div>
+                <div class="text-gray-500 font-medium">คะแนนความพึงพอใจเฉลี่ย</div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center justify-center text-center">
+                <div class="text-5xl font-bold text-purple-600 mb-2" id="avg-spending">กำลังโหลด...</div>
+                <div class="text-gray-500 font-medium">ค่าใช้จ่ายเฉลี่ย (บาท)</div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">การใช้งานแพลตฟอร์ม</h2>
+            <div class="relative h-80">
+                <canvas id="platformChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">ข้อมูลลูกค้าทั้งหมด</h2>
+            <div class="mb-4">
+                <input type="text" id="search-input" placeholder="ค้นหา..." class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="overflow-x-auto rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200" id="data-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(0)">ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(1)">อายุ</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(2)">เพศ</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(3)">แพลตฟอร์ม</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(4)">ค่าใช้จ่ายเฉลี่ย</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer" onclick="sortTable(5)">คะแนนความพึงพอใจ</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="table-body">
+                        <!-- Data will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSiyJX8QXu_9PH01RPL45xEnkkq6weXIKYjpb2qYax_QzrW-PsvzYpPFkF1MGyFNHPBCrVnNELMKtNf/pub?gid=0&single=true&output=csv';
+
+        // Function to fetch and parse the CSV data from the URL
+        async function fetchCSVAndRender() {
+            try {
+                const response = await fetch(DATA_URL);
+                const csvText = await response.text();
+                allData = parseCSV(csvText);
+                displayedData = [...allData];
+
+                // Render dashboard with fetched data
+                renderKPIs(allData);
+                renderChart(allData);
+                renderTable(allData);
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('total-users').textContent = 'Error';
+                document.getElementById('avg-satisfaction').textContent = 'Error';
+                document.getElementById('avg-spending').textContent = 'Error';
+                const tableBody = document.getElementById('table-body');
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">ไม่สามารถโหลดข้อมูลได้ โปรดตรวจสอบ URL</td></tr>';
+            }
+        }
+
+        // Function to parse the CSV data
+        function parseCSV(csv) {
+            const lines = csv.split('\n').filter(line => line.trim() !== '');
+            if (lines.length <= 1) return [];
+            const headers = lines[0].split(',').map(header => header.trim());
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                const currentline = lines[i].split(',').map(cell => cell.trim());
+                if (currentline.length === headers.length) {
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = currentline[index];
+                    });
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        // Global variable to hold the parsed data
+        let allData = [];
+        let displayedData = [];
+
+        // Render KPI Cards
+        function renderKPIs(data) {
+            const totalUsers = data.length;
+            const avgSatisfaction = (data.reduce((sum, row) => sum + parseFloat(row.satisfaction_score), 0) / totalUsers).toFixed(2);
+            const avgSpending = (data.reduce((sum, row) => sum + parseInt(row.avg_spending), 0) / totalUsers).toFixed(0);
+
+            document.getElementById('total-users').textContent = totalUsers;
+            document.getElementById('avg-satisfaction').textContent = avgSatisfaction;
+            document.getElementById('avg-spending').textContent = parseInt(avgSpending).toLocaleString();
+        }
+
+        // Render Bar Chart
+        let platformChart;
+        function renderChart(data) {
+            const platformCounts = {};
+            data.forEach(row => {
+                const platform = row.preferred_platform;
+                platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+            });
+
+            const labels = Object.keys(platformCounts);
+            const counts = Object.values(platformCounts);
+
+            const ctx = document.getElementById('platformChart').getContext('2d');
+            
+            if (platformChart) {
+                platformChart.destroy(); // Destroy previous chart instance
+            }
+
+            platformChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'จำนวนลูกค้า',
+                        data: counts,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)',
+                            'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)', 'rgba(255, 159, 64, 0.6)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'จำนวนลูกค้า' }
+                        },
+                        x: {
+                            title: { display: true, text: 'แพลตฟอร์มที่นิยม' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.y + ' คน';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Data Table
+        function renderTable(data) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            if (data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูล</td></tr>';
+                return;
+            }
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.classList.add('hover:bg-gray-50');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${row.customer_id}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.age}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.gender}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.preferred_platform}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${parseInt(row.avg_spending).toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.satisfaction_score}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Sorting function for the table
+        let sortDirection = {};
+        function sortTable(columnIndex) {
+            const table = document.getElementById('data-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const header = table.querySelectorAll('th')[columnIndex];
+            const headerText = header.textContent.trim();
+
+            if (!sortDirection[headerText]) {
+                sortDirection[headerText] = 'asc';
+            } else {
+                sortDirection[headerText] = sortDirection[headerText] === 'asc' ? 'desc' : 'asc';
+            }
+
+            rows.sort((a, b) => {
+                let aText = a.children[columnIndex].textContent.trim();
+                let bText = b.children[columnIndex].textContent.trim();
+
+                // Handle numeric data
+                if (['อายุ', 'ค่าใช้จ่ายเฉลี่ย', 'คะแนนความพึงพอใจ'].includes(headerText)) {
+                    aText = parseFloat(aText.replace(/,/g, ''));
+                    bText = parseFloat(bText.replace(/,/g, ''));
+                    if (sortDirection[headerText] === 'asc') {
+                        return aText - bText;
+                    } else {
+                        return bText - aText;
+                    }
+                } else { // Handle string data
+                    if (sortDirection[headerText] === 'asc') {
+                        return aText.localeCompare(bText, 'th');
+                    } else {
+                        return bText.localeCompare(aText, 'th');
+                    }
+                }
+            });
+
+            // Re-render the sorted table
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // Initial render on page load
+        window.onload = fetchCSVAndRender;
+
+        // Add search and filter functionality
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filteredData = allData.filter(row =>
+                Object.values(row).some(value => value.toLowerCase().includes(query))
+            );
+            displayedData = filteredData;
+            renderTable(displayedData);
+        });
+
+    </script>
+</body>
+</html>
