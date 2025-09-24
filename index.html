@@ -7,79 +7,59 @@
   <style>
     /* ใช้ฟอนต์เรียบง่ายและพื้นหลังนุ่มๆ */
     body {
-  font-family: 'Press Start 2P', cursive; /* ฟอนต์แนวเกม Retro (ต้องมีลิงก์ Google Font) */
-  background: linear-gradient(135deg, #ff00cc, #3333ff);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-  color: #fff;
-}
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #d9f0ff, #fef6e4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
 
-/* --- กล่องโปรไฟล์ --- */
-.profile-card {
-  background: rgba(0, 0, 0, 0.6);
-  padding: 30px;
-  border-radius: 20px;
-  border: 4px solid #00ffff;
-  box-shadow: 0 0 20px #00ffff, 0 0 40px #ff00ff;
-  text-align: center;
-  width: 350px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
+    /* กล่องโปรไฟล์ */
+    .profile-card {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      width: 320px;
+      transition: transform 0.3s ease;
+    }
 
-.profile-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 40px #00ffff, 0 0 80px #ff00ff;
-}
+    .profile-card:hover {
+      transform: translateY(-5px);
+    }
 
-/* --- รูปโปรไฟล์ --- */
-.profile-card img {
-  width: 160px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 10px;
-  border: 3px solid #ff00ff;
-  box-shadow: 0 0 15px #ff00ff, 0 0 25px #00ffff;
-}
+    /* รูปโปรไฟล์ */
+    .profile-card img {
+      width: 150px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 3px solid #4da3ff;
+    }
 
-/* --- ชื่อ --- */
-.profile-card h1 {
-  font-size: 1.3em;
-  margin-top: 20px;
-  margin-bottom: 15px;
-  color: #00ffff;
-  text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff;
-}
+    /* ชื่อ */
+    .profile-card h1 {
+      font-size: 1.8em;
+      margin-top: 15px;
+      margin-bottom: 10px;
+      color: #333;
+    }
 
-/* --- ข้อมูลโปรไฟล์ --- */
-.profile-card p {
-  margin: 10px 0;
-  font-size: 0.8em;
-  color: #fff;
-  text-shadow: 0 0 3px #ff00ff, 0 0 6px #00ffff;
-}
+    /* ข้อมูลโปรไฟล์ */
+    .profile-card p {
+      margin: 5px 0;
+      color: #555;
+      font-size: 1em;
+    }
 
-/* --- เพิ่มปุ่มเกมนิด ๆ --- */
-.profile-card .btn {
-  display: inline-block;
-  margin-top: 15px;
-  padding: 10px 20px;
-  background: #ff00ff;
-  color: #fff;
-  text-decoration: none;
-  font-size: 0.8em;
-  border: 2px solid #00ffff;
-  border-radius: 8px;
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
-
-.profile-card .btn:hover {
-  background: #00ffff;
-  color: #000;
-  box-shadow: 0 0 15px #ff00ff, 0 0 30px #00ffff;
-}
+    /* เน้นสีอีเมล */
+    .profile-card p.email {
+      color: #0077cc;
+      font-weight: bold;
+    }
   </style>
 <!DOCTYPE html>
 <html lang="en">
