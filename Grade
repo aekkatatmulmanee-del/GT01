@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณเกรด</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for striped table rows and hover effect */
+        .striped-table tbody tr:nth-child(odd) {
+            background-color: #27272a; /* Zinc 800 for odd rows */
+        }
+        .striped-table tbody tr:hover {
+            background-color: #3f3f46; /* Zinc 700 on hover */
+        }
+        .btn {
+            @apply shadow-md transition-all duration-200 ease-in-out transform hover:scale-105;
+        }
+    </style>
+</head>
+<body class="bg-zinc-900 text-zinc-200 p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto space-y-8">
+        <!-- Header Section with a prominent title -->
+        <div class="text-center bg-zinc-800 p-6 rounded-xl shadow-lg">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-orange-400 tracking-tight">ระบบตัดเกรด</h1>
+            <p class="mt-2 text-lg text-zinc-400">เครื่องมือสำหรับครูเพื่อคำนวณและจัดการเกรดนักเรียน</p>
+        </div>
+
+        <!-- Dashboard Summary Section -->
+        <div class="bg-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-zinc-200 mb-4">สรุปผลภาพรวม</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Total Students Card -->
+                <div class="bg-zinc-700 p-4 rounded-lg shadow-sm text-center">
+                    <p class="text-sm text-zinc-400">จำนวนนักเรียนทั้งหมด</p>
+                    <p id="total-students" class="text-3xl font-bold text-orange-400 mt-1">0</p>
+                </div>
+                <!-- Average Score Card -->
+                <div class="bg-zinc-700 p-4 rounded-lg shadow-sm text-center">
+                    <p class="text-sm text-zinc-400">คะแนนเฉลี่ยรวม</p>
+                    <p id="average-score" class="text-3xl font-bold text-orange-400 mt-1">0.00</p>
+                </div>
+                <!-- Average Grade Card -->
+                <div class="bg-zinc-700 p-4 rounded-lg shadow-sm text-center">
+                    <p class="text-sm text-zinc-400">เกรดเฉลี่ย</p>
+                    <p id="average-grade" class="text-3xl font-bold text-orange-400 mt-1">N/A</p>
+                </div>
+            </div>
+            
+            <!-- Grade Distribution Graph Section -->
+            <div class="bg-zinc-700 p-4 rounded-lg">
+                <h3 class="text-lg font-bold text-zinc-200 mb-2">กราฟแสดงจำนวนนักเรียนในแต่ละเกรด</h3>
+                <canvas id="grade-chart" class="w-full max-h-80"></canvas>
+            </div>
+        </div>
+        
+        <!-- Grade Weight Form Section -->
+        <div class="bg-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-zinc-200 mb-4">กำหนดน้ำหนักคะแนน</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label for="work-weight" class="block text-sm font-medium text-zinc-400">คะแนนเก็บ (Work Score) %</label>
+                    <input type="number" id="work-weight" value="60" min="0" max="100" class="mt-1 block w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div>
+                    <label for="exam-weight" class="block text-sm font-medium text-zinc-400">คะแนนสอบ (Exam Score) %</label>
+                    <input type="number" id="exam-weight" value="40" min="0" max="100" class="mt-1 block w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Input Form Section -->
+        <div class="bg-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-zinc-200 mb-4">เพิ่มรายชื่อนักเรียน</h2>
+            <form id="student-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="student-name" class="block text-sm font-medium text-zinc-400">ชื่อนักเรียน</label>
+                    <input type="text" id="student-name" class="mt-1 block w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500" required>
+                </div>
+                <div>
+                    <label for="work-score" class="block text-sm font-medium text-zinc-400">คะแนนเก็บ (100)</label>
+                    <input type="number" id="work-score" min="0" max="100" class="mt-1 block w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500" required>
+                </div>
+                <div>
+                    <label for="exam-score" class="block text-sm font-medium text-zinc-400">คะแนนสอบ (100)</label>
+                    <input type="number" id="exam-score" min="0" max="100" class="mt-1 block w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500" required>
+                </div>
+                <div class="md:col-span-4">
+                    <button type="submit" class="w-full bg-orange-600 text-white py-2 px-4 rounded-md font-bold hover:bg-orange-700 transition-colors shadow-md btn">เพิ่มนักเรียน</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Result Table Section -->
+        <div class="bg-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
+            <h2 class="text-2xl font-bold text-zinc-200 mb-4">ผลลัพธ์</h2>
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-2 sm:space-y-0">
+                <div class="w-full sm:w-auto">
+                    <input type="text" id="filter-input" placeholder="กรองตามชื่อนักเรียน..." class="w-full p-2 border border-zinc-700 rounded-md shadow-sm bg-zinc-900 text-white focus:ring-orange-500 focus:border-orange-500">
+                </div>
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <button id="calculate-all-btn" class="w-full sm:w-auto bg-amber-600 text-white py-2 px-6 rounded-md font-bold hover:bg-amber-700 transition-colors shadow-md btn">คำนวณเกรดทั้งหมด</button>
+                    <button id="export-csv-btn" class="w-full sm:w-auto bg-orange-600 text-white py-2 px-6 rounded-md font-bold hover:bg-orange-700 transition-colors shadow-md btn">Export CSV</button>
+                </div>
+            </div>
+            <div class="overflow-x-auto rounded-lg shadow-sm border border-zinc-700">
+                <table class="min-w-full divide-y divide-zinc-700 striped-table">
+                    <thead class="bg-zinc-700">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">#</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">ชื่อ</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">คะแนนเก็บ</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">คะแนนสอบ</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">คะแนนรวม</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">เกรด</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-zinc-300 uppercase tracking-wider">ลบ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body" class="divide-y divide-zinc-700">
+                        <!-- Student data rows will be injected here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div id="pagination-controls" class="flex justify-center items-center mt-4 space-x-2">
+                <button id="prev-page-btn" class="bg-zinc-700 text-zinc-300 p-2 rounded-md hover:bg-zinc-600 disabled:opacity-50" disabled>ก่อนหน้า</button>
+                <span id="page-info" class="text-sm font-medium text-zinc-400">หน้า 1 จาก 1</span>
+                <button id="next-page-btn" class="bg-zinc-700 text-zinc-300 p-2 rounded-md hover:bg-zinc-600 disabled:opacity-50" disabled>ถัดไป</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript Section
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Global variables
+            const studentForm = document.getElementById('student-form');
+            const resultTableBody = document.getElementById('result-table-body');
+            const workWeightInput = document.getElementById('work-weight');
+            const examWeightInput = document.getElementById('exam-weight');
+            const calculateAllBtn = document.getElementById('calculate-all-btn');
+            const exportCsvBtn = document.getElementById('export-csv-btn');
+            const filterInput = document.getElementById('filter-input');
+            const prevPageBtn = document.getElementById('prev-page-btn');
+            const nextPageBtn = document.getElementById('next-page-btn');
+            const pageInfoSpan = document.getElementById('page-info');
+
+            let currentPage = 1;
+            const rowsPerPage = 5;
+
+            // Function to calculate final score and grade
+            function calculateGrade(workScore, examScore) {
+                const workWeight = parseFloat(workWeightInput.value) / 100;
+                const examWeight = parseFloat(examWeightInput.value) / 100;
+
+                // Validate weights
+                if (Math.abs(workWeight + examWeight - 1) > 0.001) {
+                    alert('น้ำหนักคะแนนรวมกันต้องได้ 100%');
+                    return { totalScore: null, grade: 'F' };
+                }
+
+                // Calculate total score
+                const totalScore = (workScore * workWeight) + (examScore * examWeight);
+                let grade;
+
+                // Determine grade based on total score
+                if (totalScore >= 80) {
+                    grade = 'A';
+                } else if (totalScore >= 70) {
+                    grade = 'B';
+                } else if (totalScore >= 60) {
+                    grade = 'C';
+                } else if (totalScore >= 50) {
+                    grade = 'D';
+                } else {
+                    grade = 'F';
+                }
+
+                return { totalScore: totalScore.toFixed(2), grade: grade };
+            }
+
+            // Function to save student data to localStorage
+            function saveStudents(students) {
+                localStorage.setItem('students', JSON.stringify(students));
+            }
+
+            // Function to get student data from localStorage
+            function getStudents() {
+                const students = localStorage.getItem('students');
+                return students ? JSON.parse(students) : [];
+            }
+            
+            // Function to update the summary dashboard cards and chart
+            function updateSummary(students) {
+                const totalStudentsEl = document.getElementById('total-students');
+                const averageScoreEl = document.getElementById('average-score');
+                const averageGradeEl = document.getElementById('average-grade');
+
+                if (students.length === 0) {
+                    totalStudentsEl.textContent = '0';
+                    averageScoreEl.textContent = '0.00';
+                    averageGradeEl.textContent = 'N/A';
+                    drawBarChart({ A: 0, B: 0, C: 0, D: 0, F: 0 });
+                    return;
+                }
+
+                const totalScores = students.map(s => {
+                    const { totalScore } = calculateGrade(s.workScore, s.examScore);
+                    return parseFloat(totalScore);
+                });
+
+                const totalScoreSum = totalScores.reduce((sum, score) => sum + score, 0);
+                const averageScore = totalScoreSum / students.length;
+                
+                // Grade distribution
+                const gradeCounts = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+                const gradeScores = { A: [], B: [], C: [], D: [], F: [] };
+                
+                students.forEach(student => {
+                    const { totalScore, grade } = calculateGrade(student.workScore, student.examScore);
+                    gradeCounts[grade]++;
+                    gradeScores[grade].push(parseFloat(totalScore));
+                });
+                
+                // Calculate average grade (simple average of a 4.0 scale for display)
+                const gradePoints = { A: 4.0, B: 3.0, C: 2.0, D: 1.0, F: 0.0 };
+                const totalPoints = students.reduce((sum, student) => {
+                    const { grade } = calculateGrade(student.workScore, student.examScore);
+                    return sum + gradePoints[grade];
+                }, 0);
+                const averageGrade = (totalPoints / students.length).toFixed(2);
+
+                totalStudentsEl.textContent = students.length;
+                averageScoreEl.textContent = averageScore.toFixed(2);
+                averageGradeEl.textContent = averageGrade;
+
+                drawBarChart(gradeCounts, gradeScores);
+            }
+
+            // Function to draw the bar chart on a canvas
+            function drawBarChart(gradeCounts, gradeScores) {
+                const canvas = document.getElementById('grade-chart');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+
+                const grades = ['A', 'B', 'C', 'D', 'F'];
+                const counts = grades.map(grade => gradeCounts[grade]);
+                const maxCount = Math.max(...counts, 1);
+                
+                const barWidth = 40;
+                const gap = 30;
+                const startX = 50;
+                const startY = canvas.height - 50;
+                const scaleY = (canvas.height - 100) / maxCount;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Bar colors (dark theme)
+                const colors = {
+                    'A': '#84cc16', // Lime 500
+                    'B': '#38bdf8', // Light blue 400
+                    'C': '#eab308', // Amber 500
+                    'D': '#f97316', // Orange 500
+                    'F': '#ef4444' // Red 500
+                };
+
+                // Draw bars and labels
+                grades.forEach((grade, index) => {
+                    const barHeight = counts[index] * scaleY;
+                    const x = startX + index * (barWidth + gap);
+                    const y = startY - barHeight;
+
+                    // Draw bar
+                    ctx.fillStyle = colors[grade];
+                    ctx.fillRect(x, y, barWidth, barHeight);
+
+                    // Draw count label on top of bar
+                    ctx.fillStyle = '#f5f5f4'; // Stone 100
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(counts[index], x + barWidth / 2, y - 5);
+
+                    // Draw grade label below bar
+                    ctx.fillText(grade, x + barWidth / 2, startY + 20);
+                });
+                
+                // Draw y-axis
+                ctx.beginPath();
+                ctx.moveTo(startX - 10, startY);
+                ctx.lineTo(startX - 10, startY - (maxCount * scaleY) - 10);
+                ctx.strokeStyle = '#a1a1aa'; // Zinc 400
+                ctx.stroke();
+
+                // Draw x-axis
+                ctx.beginPath();
+                ctx.moveTo(startX - 10, startY);
+                ctx.lineTo(startX + grades.length * (barWidth + gap) - gap, startY);
+                ctx.strokeStyle = '#a1a1aa'; // Zinc 400
+                ctx.stroke();
+
+                // Draw average score labels
+                grades.forEach((grade, index) => {
+                    const averageScore = gradeScores[grade].length > 0 ? (gradeScores[grade].reduce((sum, score) => sum + score, 0) / gradeScores[grade].length).toFixed(1) : 'N/A';
+                    ctx.fillStyle = '#a1a1aa'; // Zinc 400
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`Avg: ${averageScore}`, startX + index * (barWidth + gap) + barWidth / 2, startY + 35);
+                });
+            }
+
+            // Function to render the student table with pagination and filtering
+            function renderTable(students) {
+                const filterText = filterInput.value.toLowerCase();
+                const filteredStudents = students.filter(student => 
+                    student.name.toLowerCase().includes(filterText)
+                );
+                
+                const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+                const startIndex = (currentPage - 1) * rowsPerPage;
+                const endIndex = startIndex + rowsPerPage;
+                const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+                resultTableBody.innerHTML = ''; // Clear table
+                paginatedStudents.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    const originalIndex = startIndex + index + 1;
+                    const { totalScore, grade } = calculateGrade(student.workScore, student.examScore);
+
+                    row.innerHTML = `
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-zinc-400">${originalIndex}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-zinc-200">${student.name}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-zinc-400">${student.workScore}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm text-zinc-400">${student.examScore}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-zinc-200">${totalScore}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-bold ${
+                            grade === 'A' ? 'text-lime-400' :
+                            grade === 'B' ? 'text-sky-400' :
+                            grade === 'C' ? 'text-amber-400' :
+                            grade === 'D' ? 'text-orange-400' :
+                            'text-red-400'
+                        }">${grade}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                            <button class="delete-btn text-red-400 hover:text-red-300" data-index="${originalIndex - 1}">ลบ</button>
+                        </td>
+                    `;
+                    resultTableBody.appendChild(row);
+                });
+
+                // Update pagination controls
+                pageInfoSpan.textContent = `หน้า ${currentPage} จาก ${totalPages === 0 ? 1 : totalPages}`;
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            }
+
+            // Function to export student data to a CSV file
+            function exportStudentsToCSV() {
+                const students = getStudents();
+                if (students.length === 0) {
+                    alert('ไม่มีข้อมูลนักเรียนที่จะ Export');
+                    return;
+                }
+
+                // Create CSV headers
+                const headers = ["ลำดับ", "ชื่อ", "คะแนนเก็บ", "คะแนนสอบ", "คะแนนรวม", "เกรด"];
+                const csvRows = [headers.join(',')];
+
+                // Create data rows
+                students.forEach((student, index) => {
+                    const { totalScore, grade } = calculateGrade(student.workScore, student.examScore);
+                    const row = [
+                        index + 1,
+                        `"${student.name}"`, // Quote the name to handle commas
+                        student.workScore,
+                        student.examScore,
+                        totalScore,
+                        grade
+                    ];
+                    csvRows.push(row.join(','));
+                });
+
+                const csvString = csvRows.join('\n');
+                
+                // Create a Blob and download link
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                // Get current date for the filename
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const filename = `grades_${year}-${month}-${day}.csv`;
+
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // Load initial data or sample data if localStorage is empty
+            function loadInitialData() {
+                const students = getStudents();
+                if (students.length === 0) {
+                    const sampleStudents = [
+                        { name: "สมชาย ใจดี", workScore: 85, examScore: 90 },
+                        { name: "สมหญิง รักเรียน", workScore: 75, examScore: 82 },
+                        { name: "เอกภพ ขยันมาก", workScore: 92, examScore: 78 },
+                        { name: "นกน้อย เรียบร้อย", workScore: 65, examScore: 75 },
+                        { name: "ดำเกิง ช่างสงสัย", workScore: 45, examScore: 55 },
+                        { name: "สุดา รักสงบ", workScore: 88, examScore: 95 },
+                        { name: "มานะ มั่นคง", workScore: 55, examScore: 62 },
+                        { name: "อารี ใฝ่รู้", workScore: 72, examScore: 78 },
+                        { name: "จำเนียร ช่างสังเกต", workScore: 90, examScore: 85 },
+                        { name: "พิชิต ชัยชนะ", workScore: 30, examScore: 45 }
+                    ];
+                    saveStudents(sampleStudents);
+                }
+                const allStudents = getStudents();
+                updateSummary(allStudents);
+                renderTable(allStudents);
+            }
+
+            // Event listener for adding a new student
+            studentForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const studentName = document.getElementById('student-name').value;
+                const workScore = parseFloat(document.getElementById('work-score').value);
+                const examScore = parseFloat(document.getElementById('exam-score').value);
+
+                const newStudent = {
+                    name: studentName,
+                    workScore: workScore,
+                    examScore: examScore
+                };
+
+                const students = getStudents();
+                students.push(newStudent);
+                saveStudents(students);
+                
+                // Refresh all components
+                updateSummary(students);
+                currentPage = Math.ceil(students.length / rowsPerPage); // Go to the last page
+                renderTable(students);
+                studentForm.reset();
+            });
+
+            // Event listener for deleting a student
+            resultTableBody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-btn')) {
+                    const indexToDelete = parseInt(e.target.dataset.index);
+                    const students = getStudents();
+                    students.splice(indexToDelete, 1);
+                    saveStudents(students);
+                    
+                    // Refresh all components
+                    updateSummary(students);
+                    renderTable(students);
+                }
+            });
+
+            // Event listener for calculating all grades
+            calculateAllBtn.addEventListener('click', () => {
+                const students = getStudents();
+                updateSummary(students);
+                renderTable(students);
+                alert("คำนวณเกรดเรียบร้อยแล้ว!");
+            });
+
+            // Event listener for exporting CSV
+            exportCsvBtn.addEventListener('click', () => {
+                exportStudentsToCSV();
+            });
+
+            // Event listeners for pagination
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable(getStudents());
+                }
+            });
+
+            nextPageBtn.addEventListener('click', () => {
+                const filteredStudents = getStudents().filter(student => 
+                    student.name.toLowerCase().includes(filterInput.value.toLowerCase())
+                );
+                const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable(getStudents());
+                }
+            });
+
+            // Event listener for filtering
+            filterInput.addEventListener('keyup', () => {
+                currentPage = 1; // Reset to the first page when filtering
+                renderTable(getStudents());
+            });
+
+            // Event listener for weight inputs
+            workWeightInput.addEventListener('input', () => {
+                let workVal = parseFloat(workWeightInput.value);
+                if (workVal < 0) workVal = 0;
+                if (workVal > 100) workVal = 100;
+                examWeightInput.value = (100 - workVal).toFixed(0);
+            });
+            examWeightInput.addEventListener('input', () => {
+                let examVal = parseFloat(examWeightInput.value);
+                if (examVal < 0) examVal = 0;
+                if (examVal > 100) examVal = 100;
+                workWeightInput.value = (100 - examVal).toFixed(0);
+            });
+
+            // Initial load of data
+            loadInitialData();
+        });
+    </script>
+</body>
+</html>
